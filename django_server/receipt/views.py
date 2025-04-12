@@ -6,8 +6,10 @@ from django.conf import settings
 from .ocr_utils import extract_text_from_image_file
 from openAi.receipt_parser import extract_fields_with_llm
 import traceback
+from .models import Receipt
+import json
 
-@csrf_exempt 
+@csrf_exempt
 @require_POST
 def upload_receipt(request):
     print("📥 Receipt upload request received", flush=True)
@@ -58,13 +60,27 @@ def upload_receipt(request):
         print(final_ocr)
 
         structured_data = extract_fields_with_llm(final_ocr)
-        print("✅ Structured data received from LLM:")
-        print(structured_data)
+        print("📦 Structured data being saved to DB:", flush=True)
+        print(structured_data, flush=True)
+        print("🧾 Items:", structured_data.get("items", []), flush=True)
+
+        # 🧠 Save to DB
+        receipt_obj = Receipt.objects.create(
+            uid=uid,
+            business_name=structured_data.get("business_name", ""),
+            receipt_number=structured_data.get("receipt_number", ""),
+            total_price=structured_data.get("total_price", ""),
+            payment_method=structured_data.get("payment_method", ""),
+            credit_card_last_4_digits=structured_data.get("credit_card_last_4_digits", ""),
+            items=structured_data.get("items", []),
+        )
+
         return JsonResponse({
             'status': 'success',
             'data': structured_data,
             'saved_files': saved_files
         })
+
 
     except Exception as e:
         traceback_str = traceback.format_exc()

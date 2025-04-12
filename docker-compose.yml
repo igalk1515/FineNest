@@ -18,8 +18,10 @@ services:
     image: postgres:15
     environment:
       POSTGRES_DB: home_expense_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
+      POSTGRES_USER: newuser
+      POSTGRES_PASSWORD: newpass
+    ports:
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data/
 
