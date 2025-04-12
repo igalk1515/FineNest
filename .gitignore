@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.log
+*.sqlite3
+
+# Django
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+media/
+staticfiles/
+local_settings.py
+.env
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+*.sock
+*.gz
+*.tgz
+
+# Docker Compose
+*.env
+docker-compose.override.yml
+
+# Pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# MyPy
+.mypy_cache/
+
+# Pytest
+.pytest_cache/
+
+# coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Logs
+logs/
+*.log
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Others
+.env.*
+.idea/

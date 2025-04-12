@@ -1,0 +1,27 @@
+services:
+  web:
+    build: .
+    env_file:
+      - .env # ✅ load secrets like OPENAI_API_KEY
+    volumes:
+      - ./django_server:/app/django_server
+      - ./wait_for_db.sh:/wait_for_db.sh
+    working_dir: /app/django_server
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+    command:
+      ['/wait_for_db.sh', 'python', 'manage.py', 'runserver', '0.0.0.0:8000']
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: home_expense_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+volumes:
+  postgres_data:
