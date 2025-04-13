@@ -23,7 +23,5 @@ def extract_fields_with_llm(ocr_result: dict) -> dict:
     )
 
     content = response.choices[0].message.content
-    print("📦 Structured data from LLM:", content, flush=True)
     cleaned_content = re.sub(r"^```json\s*|```$", "", content.strip(), flags=re.MULTILINE)
-    print("📦 Cleaned content:", cleaned_content, flush=True)
     return json.loads(cleaned_content)

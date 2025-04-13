@@ -6,17 +6,15 @@ from django.conf import settings
 from .ocr_utils import extract_text_from_image_file
 from openAi.receipt_parser import extract_fields_with_llm
 import traceback
-from .models import Receipt
+from .models import Receipt, PaymentMethod
 import json
+from django.core.serializers.json import DjangoJSONEncoder
 
 @csrf_exempt
 @require_POST
 def upload_receipt(request):
-    print("📥 Receipt upload request received", flush=True)
     uid = request.POST.get('uid')
     receipt_files = request.FILES.getlist('receipt')
-    # print the uid
-    print(f"UID: {uid}")
 
     if not uid or not receipt_files:
         return JsonResponse({'error': 'Missing uid or receipt(s)'}, status=400)
@@ -41,39 +39,19 @@ def upload_receipt(request):
 
         saved_files.append(upload_path)
 
-        # ✅ OCR this image
         ocr_result = extract_text_from_image_file(full_path)
 
-        # ✅ Combine each OCR language result
         for key in combined_ocr:
             combined_ocr[key].append(ocr_result.get(key, ""))
 
-    # ✅ Join results into one string per language
     final_ocr = {
         key: "\n".join(combined_ocr[key]).strip()
         for key in combined_ocr
     }
 
-    # ✅ Send to GPT-4o for structured parsing
     try:
-        print("🚀 Final OCR Result:")
-        print(final_ocr)
 
         structured_data = extract_fields_with_llm(final_ocr)
-        print("📦 Structured data being saved to DB:", flush=True)
-        print(structured_data, flush=True)
-        print("🧾 Items:", structured_data.get("items", []), flush=True)
-
-        # 🧠 Save to DB
-        receipt_obj = Receipt.objects.create(
-            uid=uid,
-            business_name=structured_data.get("business_name", ""),
-            receipt_number=structured_data.get("receipt_number", ""),
-            total_price=structured_data.get("total_price", ""),
-            payment_method=structured_data.get("payment_method", ""),
-            credit_card_last_4_digits=structured_data.get("credit_card_last_4_digits", ""),
-            items=structured_data.get("items", []),
-        )
 
         return JsonResponse({
             'status': 'success',
@@ -84,11 +62,42 @@ def upload_receipt(request):
 
     except Exception as e:
         traceback_str = traceback.format_exc()
-        print("❌ Exception while calling LLM:")
-        print(traceback_str)
 
         return JsonResponse({
             'error': 'Failed to process receipt with OpenAI',
             'details': str(e),
             'trace': traceback_str
         }, status=500)
+
+@csrf_exempt
+@require_POST
+def create_receipt(request):
+    data = json.loads(request.body)
+    required_fields = ['uid', 'business_name', 'receipt_number', 'total_price', 'payment_method', 'credit_card_last_4_digits', 'items']
+    for field in required_fields:
+        if field not in data:
+            return JsonResponse({'error': f'Missing field: {field}'}, status=400)
+
+    if data['payment_method'] not in PaymentMethod.values:
+        return JsonResponse({'error': 'Invalid payment method'}, status=400)
+
+    # Save to DB
+    receipt_obj = Receipt.objects.create(
+        uid=data['uid'],
+        business_name=data['business_name'],
+        receipt_number=data['receipt_number'],
+        total_price=data['total_price'],
+        payment_method=data['payment_method'],
+        credit_card_last_4_digits=data['credit_card_last_4_digits'],
+        items=data['items'],
+    )
+
+    return JsonResponse({'status': 'success', 'receipt_id': receipt_obj.id})
+
+@csrf_exempt
+def get_all_receipts(request):
+    try:
+        receipts = Receipt.objects.all().values()
+        return JsonResponse(list(receipts), safe=False, encoder=DjangoJSONEncoder)
+    except Exception as e:
+        return JsonResponse({'error': 'Failed to retrieve receipts'}, status=500)
