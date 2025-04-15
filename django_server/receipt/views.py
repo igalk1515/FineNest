@@ -2,6 +2,7 @@ import os
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET
 from django.conf import settings
 from .ocr_utils import extract_text_from_image_file
 from openAi.receipt_parser import extract_fields_with_llm
@@ -95,9 +96,15 @@ def create_receipt(request):
     return JsonResponse({'status': 'success', 'receipt_id': receipt_obj.id})
 
 @csrf_exempt
+@require_GET
 def get_all_receipts(request):
+    uid = request.GET.get('uid')  # Get the UID from the query params
+
+    if not uid:
+        return JsonResponse({'error': 'Missing uid in query parameters'}, status=400)
+
     try:
-        receipts = Receipt.objects.all().values()
+        receipts = Receipt.objects.filter(uid=uid).values()
         return JsonResponse(list(receipts), safe=False, encoder=DjangoJSONEncoder)
     except Exception as e:
         return JsonResponse({'error': 'Failed to retrieve receipts'}, status=500)
