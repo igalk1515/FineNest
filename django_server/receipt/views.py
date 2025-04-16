@@ -76,8 +76,9 @@ def create_receipt(request):
     data = json.loads(request.body)
     required_fields = ['uid', 'business_name', 'receipt_number', 'total_price', 'payment_method', 'credit_card_last_4_digits', 'items']
     for field in required_fields:
-        if field not in data:
+        if field not in data and field != 'credit_card_last_4_digits':
             return JsonResponse({'error': f'Missing field: {field}'}, status=400)
+            
 
     if data['payment_method'] not in PaymentMethod.values:
         return JsonResponse({'error': 'Invalid payment method'}, status=400)
