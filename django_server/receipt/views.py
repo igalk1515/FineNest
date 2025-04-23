@@ -100,12 +100,13 @@ def create_receipt(request):
 @require_GET
 def get_all_receipts(request):
     uid = request.GET.get('uid')  # Get the UID from the query params
-
+    print(uid, flush=True)
     if not uid:
         return JsonResponse({'error': 'Missing uid in query parameters'}, status=400)
 
     try:
         receipts = Receipt.objects.filter(uid=uid).values()
+        print(receipts, flush=True)
         return JsonResponse(list(receipts), safe=False, encoder=DjangoJSONEncoder)
     except Exception as e:
         return JsonResponse({'error': 'Failed to retrieve receipts'}, status=500)
